@@ -12,7 +12,7 @@ A simple Node.js example demonstrating basic usage of the Carnil SDK with Stripe
 
 ## Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - Stripe account with API keys
 - npm or yarn
 
@@ -42,11 +42,11 @@ echo "STRIPE_WEBHOOK_SECRET=whsec_..." >> .env
 ```javascript
 const carnil = new Carnil({
   provider: {
-    provider: 'stripe',
+    provider: "stripe",
     apiKey: process.env.STRIPE_API_KEY,
-    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
   },
-  debug: true
+  debug: true,
 });
 ```
 
@@ -63,38 +63,44 @@ npm start
 The example demonstrates the following operations:
 
 1. **Customer Creation**
+
    ```javascript
    const customer = await carnil.createCustomer({
-     email: 'customer@example.com',
-     name: 'John Doe'
+     email: "customer@example.com",
+     name: "John Doe",
    });
    ```
 
 2. **Payment Intent Creation**
+
    ```javascript
    const paymentIntent = await carnil.createPaymentIntent({
      amount: 2000, // $20.00
-     currency: 'usd',
-     customerId: customer.data.id
+     currency: "usd",
+     customerId: customer.data.id,
    });
    ```
 
 3. **Subscription Creation**
+
    ```javascript
    const subscription = await carnil.createSubscription({
      customerId: customer.data.id,
-     priceId: 'price_123'
+     priceId: "price_123",
    });
    ```
 
 4. **Invoice Creation**
+
    ```javascript
    const invoice = await carnil.createInvoice({
      customerId: customer.data.id,
-     items: [{
-       priceId: 'price_123',
-       quantity: 1
-     }]
+     items: [
+       {
+         priceId: "price_123",
+         quantity: 1,
+       },
+     ],
    });
    ```
 
@@ -102,7 +108,7 @@ The example demonstrates the following operations:
    ```javascript
    const refund = await carnil.createRefund({
      paymentId: paymentIntent.data.id,
-     amount: 1000 // $10.00
+     amount: 1000, // $10.00
    });
    ```
 
@@ -123,11 +129,11 @@ The example includes comprehensive error handling:
 try {
   const result = await carnil.createPaymentIntent({
     amount: 2000,
-    currency: 'usd'
+    currency: "usd",
   });
-  console.log('Payment intent created:', result.data.id);
+  console.log("Payment intent created:", result.data.id);
 } catch (error) {
-  console.error('Error creating payment intent:', error.message);
+  console.error("Error creating payment intent:", error.message);
 }
 ```
 
@@ -158,15 +164,17 @@ Use Stripe test cards for payment testing:
 ### Using Stripe CLI
 
 1. Install Stripe CLI:
+
    ```bash
    # macOS
    brew install stripe/stripe-cli/stripe
-   
+
    # Windows
    # Download from https://github.com/stripe/stripe-cli/releases
    ```
 
 2. Login to Stripe:
+
    ```bash
    stripe login
    ```
@@ -179,35 +187,47 @@ Use Stripe test cards for payment testing:
 ### Webhook Handler
 
 ```javascript
-app.post('/webhooks', express.raw({ type: 'application/json' }), async (req, res) => {
-  try {
-    const signature = req.headers['stripe-signature'];
-    const payload = req.body;
-    
-    const isValid = await carnil.verifyWebhook(payload, signature, process.env.STRIPE_WEBHOOK_SECRET);
-    if (!isValid) {
-      return res.status(400).json({ error: 'Invalid signature' });
+app.post(
+  "/webhooks",
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    try {
+      const signature = req.headers["stripe-signature"];
+      const payload = req.body;
+
+      const isValid = await carnil.verifyWebhook(
+        payload,
+        signature,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+      if (!isValid) {
+        return res.status(400).json({ error: "Invalid signature" });
+      }
+
+      const event = await carnil.parseWebhook(
+        payload,
+        signature,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+
+      switch (event.type) {
+        case "payment_intent.succeeded":
+          console.log("Payment succeeded:", event.data);
+          break;
+        case "payment_intent.payment_failed":
+          console.log("Payment failed:", event.data);
+          break;
+        default:
+          console.log("Unhandled event type:", event.type);
+      }
+
+      res.status(200).json({ received: true });
+    } catch (error) {
+      console.error("Webhook error:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
-    
-    const event = await carnil.parseWebhook(payload, signature, process.env.STRIPE_WEBHOOK_SECRET);
-    
-    switch (event.type) {
-      case 'payment_intent.succeeded':
-        console.log('Payment succeeded:', event.data);
-        break;
-      case 'payment_intent.payment_failed':
-        console.log('Payment failed:', event.data);
-        break;
-      default:
-        console.log('Unhandled event type:', event.type);
-    }
-    
-    res.status(200).json({ received: true });
-  } catch (error) {
-    console.error('Webhook error:', error);
-    res.status(500).json({ error: 'Internal server error' });
   }
-});
+);
 ```
 
 ## Production Deployment
@@ -234,15 +254,19 @@ export STRIPE_WEBHOOK_SECRET=whsec_...
 ### Common Issues
 
 1. **Invalid API Key**
+
    ```
    Error: Invalid API key provided
    ```
+
    Solution: Check your Stripe API key in the environment variables
 
 2. **Webhook Verification Failed**
+
    ```
    Error: Invalid webhook signature
    ```
+
    Solution: Verify your webhook secret and signature generation
 
 3. **Payment Failed**
@@ -258,11 +282,11 @@ Enable debug mode for detailed logging:
 ```javascript
 const carnil = new Carnil({
   provider: {
-    provider: 'stripe',
+    provider: "stripe",
     apiKey: process.env.STRIPE_API_KEY,
-    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
   },
-  debug: true // Enable debug logging
+  debug: true, // Enable debug logging
 });
 ```
 
